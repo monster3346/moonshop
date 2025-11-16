@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Theo Dõi Đơn Hàng - MOON SHOP</title>
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0b0b1f;
+      --card: rgba(20, 20, 50, 0.6);
+      --neon-blue: #00d4ff;
+      --neon-purple: #9d4edd;
+      --text: #f0f0ff;
+      --text-muted: #b0b0d0;
+      --glass: rgba(255, 255, 255, 0.05);
+      --border: rgba(0, 212, 255, 0.15);
+      --danger: #ff4757;
+      --success: #2ed573;
+      --gold: #ffd700;
+      --sale: #ff4757;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(157, 78, 221, 0.1) 0%, transparent 50%);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+    .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute; width: 4px; height: 4px; background: var(--neon-blue); border-radius: 50%;
+      opacity: 0; animation: float 15s infinite linear; box-shadow: 0 0 12px var(--neon-blue);
+    }
+    @keyframes float { 0% { transform: translateY(100vh); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-100px) translateX(80px); opacity: 0; } }
+
+    /* Header */
+    header {
+      position: fixed; top: 0; width: 100%; z-index: 1000;
+      padding: 1.5rem 0; backdrop-filter: blur(20px);
+      background: linear-gradient(to bottom, rgba(11, 11, 31, 0.95), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-container {
+      max-width: 1400px; margin: 0 auto; padding: 0 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo {
+      font-family: 'Clash Display', sans-serif; font-size: 2.2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Tracking */
+    .tracking-container {
+      max-width: 900px; margin: 120px auto 6rem; padding: 0 2rem;
+    }
+    .tracking-card {
+      background: var(--card); padding: 2.5rem; border-radius: 24px;
+      border: 1px solid var(--border); backdrop-filter: blur(15px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+    .tracking-header {
+      text-align: center; margin-bottom: 2rem;
+    }
+    .tracking-header h2 {
+      font-family: 'Clash Display', sans-serif; font-size: 2rem;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .order-id {
+      font-size: 1.1rem; color: var(--neon-blue); font-weight: 600;
+      margin: 0.5rem 0;
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative; padding-left: 2rem;
+      border-left: 3px dashed var(--border);
+      margin: 2rem 0;
+    }
+    .timeline-item {
+      position: relative; margin-bottom: 2rem;
+      padding-left: 2.5rem;
+    }
+    .timeline-item::before {
+      content: ''; position: absolute; left: -12px; top: 0;
+      width: 20px; height: 20px; background: var(--card);
+      border: 4px solid var(--border); border-radius: 50%;
+      z-index: 1;
+    }
+    .timeline-item.active::before {
+      background: var(--neon-blue); border-color: var(--neon-blue);
+      box-shadow: 0 0 20px rgba(0,212,255,0.6);
+    }
+    .timeline-item.completed::before {
+      background: var(--success); border-color: var(--success);
+    }
+    .timeline-item .icon {
+      position: absolute; left: -8px; top: -2px; font-size: 1.2rem; color: white; z-index: 2;
+    }
+    .timeline-item h4 {
+      font-weight: 600; margin-bottom: 0.3rem; color: var(--text);
+    }
+    .timeline-item p {
+      color: var(--text-muted); font-size: 0.95rem;
+    }
+    .timeline-item .time {
+      font-size: 0.85rem; color: var(--neon-purple); margin-top: 0.3rem;
+    }
+
+    /* Summary */
+    .order-summary {
+      background: var(--glass); padding: 1.5rem; border-radius: 16px;
+      border: 1px solid var(--border); margin-top: 2rem;
+    }
+    .summary-row {
+      display: flex; justify-content: space-between; margin: 0.8rem 0;
+      font-size: 1.1rem;
+    }
+    .total-row {
+      font-size: 1.4rem; font-weight: 700; color: var(--neon-blue);
+      padding-top: 1rem; border-top: 2px solid var(--neon-purple);
+    }
+
+    .btn-back {
+      display: block; width: 100%; margin-top: 2rem;
+      padding: 1rem; background: var(--glass); color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: 16px;
+      text-align: center; font-weight: 600; cursor: pointer;
+      transition: 0.4s;
+    }
+    .btn-back:hover {
+      background: var(--neon-blue); color: #000; border-color: var(--neon-blue);
+    }
+
+    @media (max-width: 768px) {
+      .tracking-container { padding: 0 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <header>
+    <div class="nav-container">
+      <div class="logo">MOON SHOP</div>
+      <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-weight:500;">
+        <i class="fas fa-home"></i> Trang chủ
+      </a>
+    </div>
+  </header>
+
+  <div class="tracking-container">
+    <div class="tracking-card">
+      <div class="tracking-header">
+        <h2>Theo Dõi Đơn Hàng</h2>
+        <div class="order-id" id="orderId">Đang tải...</div>
+      </div>
+
+      <div class="timeline" id="timeline"></div>
+
+      <div class="order-summary" id="orderSummary"></div>
+
+      <button class="btn-back" onclick="location.href='index.html'">Quay Lại Mua Sắm</button>
+    </div>
+  </div>
+
+  <script>
+    // === FIREBASE CONFIG (DÁN TỪ CHECKOUT) ===
+    const firebaseConfig = { /* DÁN TỪ CHECKOUT.HTML */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('id');
+
+    const steps = [
+      { status: 'pending', label: 'Đơn hàng đã đặt', icon: 'fas fa-shopping-bag' },
+      { status: 'confirmed', label: 'Đã xác nhận', icon: 'fas fa-check-circle' },
+      { status: 'shipping', label: 'Đang giao hàng', icon: 'fas fa-truck' },
+      { status: 'completed', label: 'Hoàn thành', icon: 'fas fa-gift' }
+    ];
+
+    async function loadOrder() {
+      if (!orderId) {
+        alert('Không có mã đơn!');
+        location.href = 'index.html';
+        return;
+      }
+
+      document.getElementById('orderId').innerText = `Mã đơn: #${orderId.slice(0,8).toUpperCase()}`;
+
+      const doc = await db.collection('orders').doc(orderId).get();
+      if (!doc.exists) {
+        alert('Đơn hàng không tồn tại!');
+        location.href = 'index.html';
+        return;
+      }
+
+      const order = doc.data();
+      const status = order.status || 'pending';
+
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = '';
+
+      steps.forEach((step, i) => {
+        const completed = ['confirmed', 'shipping', 'completed'].indexOf(status) >= i;
+        const active = step.status === status;
+
+        const div = document.createElement('div');
+        div.className = `timeline-item ${active ? 'active' : ''} ${completed ? 'completed' : ''}`;
+        div.innerHTML = `
+          <i class="${step.icon} icon"></i>
+          <h4>${step.label}</h4>
+          <p>${active ? 'Đang xử lý...' : completed ? 'Đã hoàn thành' : 'Chưa thực hiện'}</p>
+          ${i === 0 && order.timestamp ? `<div class="time">${order.timestamp.toDate().toLocaleString('vi-VN')}</div>` : ''}
+        `;
+        timeline.appendChild(div);
+      });
+
+      document.getElementById('orderSummary').innerHTML = `
+        <div class="summary-row"><span>Khách:</span><span>${order.customer.name}</span></div>
+        <div class="summary-row"><span>Địa chỉ:</span><span>${order.customer.address}</span></div>
+        <div class="summary-row"><span>SĐT:</span><span>${order.customer.phone}</span></div>
+        <div class="summary-row"><span>Thanh toán:</span><span>${order.paymentMethod.toUpperCase()}</span></div>
+        <div class="total-row"><span>Tổng:</span><span>${order.total.toLocaleString()}₫</span></div>
+      `;
+
+      // Realtime
+      db.collection('orders').doc(orderId).onSnapshot(snap => {
+        if (snap.data().status !== status) location.reload();
+      });
+    }
+
+    // Particles
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrder();
+      for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 15 + 's';
+        document.getElementById('particles').appendChild(p);
+      }
+    });
+  </script>
+</body>
+</html>

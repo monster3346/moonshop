@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - MOON SHOP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase + Chart.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <header>
+    <div class="nav-container">
+      <div class="logo">ADMIN PANEL</div>
+      <div id="userInfo" style="color:var(--text-muted);"></div>
+      <button class="login-btn" onclick="logout()" style="background:var(--danger);">
+        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+      </button>
+    </div>
+  </header>
+
+  <div class="section">
+    <h2 class="section-title">Quản Lý & Báo Cáo</h2>
+
+    <!-- Tabs -->
+    <div class="filter-sort-bar" style="margin-bottom:2rem; justify-content:center; flex-wrap:wrap;">
+      <button class="btn-login" onclick="showTab('products')" id="tabProducts">Sản Phẩm</button>
+      <button class="btn-login" onclick="showTab('orders')" id="tabOrders">Đơn Hàng</button>
+      <button class="btn-login" onclick="showTab('report')" id="tabReport" style="background:var(--neon-purple);">Báo Cáo</button>
+    </div>
+
+    <!-- Tab Sản Phẩm -->
+    <div id="tabProductsContent">
+      <div class="admin-form">
+        <h3 style="color:var(--neon-blue);">Thêm / Sửa Sản Phẩm</h3>
+        <div class="form-grid">
+          <input type="text" id="pName" placeholder="Tên">
+          <input type="number" id="pPrice" placeholder="Giá">
+          <input type="number" id="pOldPrice" placeholder="Giá cũ">
+          <input type="text" id="pImg" placeholder="Link ảnh">
+          <select id="pCategory"><option value="phone">Điện thoại</option><option value="laptop">Laptop</option><option value="audio">Âm thanh</option></select>
+          <input type="text" id="pDesc" placeholder="Mô tả">
+          <button onclick="saveProduct()" id="saveBtn">Lưu</button>
+        </div>
+      </div>
+      <div class="products-grid" id="adminList"></div>
+    </div>
+
+    <!-- Tab Đơn Hàng -->
+    <div id="tabOrdersContent" style="display:none;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; background:var(--card); border-radius:16px;">
+          <thead style="background:var(--neon-purple); color:white;">
+            <tr>
+              <th style="padding:1rem;">ID</th>
+              <th style="padding:1rem;">Khách</th>
+              <th style="padding:1rem;">Tổng</th>
+              <th style="padding:1rem;">Trạng thái</th>
+              <th style="padding:1rem;">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab Báo Cáo -->
+    <div id="tabReportContent" style="display:none;">
+      <div style="background:var(--card); padding:2rem; border-radius:24px; margin-bottom:2rem;">
+        <h3 style="color:var(--neon-blue); text-align:center;">Doanh Thu Theo Ngày</h3>
+        <canvas id="revenueChart" height="300"></canvas>
+      </div>
+      <div style="text-align:center; color:var(--text-muted);">
+        Tổng doanh thu: <strong id="totalRevenue" style="color:var(--neon-blue);">0₫</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h2 style="color:var(--neon-purple);">Đăng Nhập</h2>
+      <input type="email" id="loginEmail" placeholder="Email" style="margin-bottom:1rem;">
+      <input type="password" id="loginPass" placeholder="Mật khẩu">
+      <button class="btn-login" onclick="login()">Đăng nhập</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // === FIREBASE CONFIG ===
+    const firebaseConfig = { /* DÁN TỪ FIREBASE */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    let currentUser = null;
+    let userRole = null;
+    let editingId = null;
+    let revenueChart = null;
+
+    // === AUTH + PHÂN QUYỀN ===
+    async function login() {
+      const email = document.getElementById('loginEmail').value;
+      const pass = document.getElementById('loginPass').value;
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        currentUser = cred.user;
+        const doc = await db.collection('users').doc(email).get();
+        userRole = doc.exists ? doc.data().role : 'staff';
+        initAdmin();
+      } catch (err) {
+        alert('Sai thông tin!');
+      }
+    }
+
+    function logout() {
+      auth.signOut().then(() => location.reload());
+    }
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        currentUser = user;
+        const doc = await db.collection('users').doc(user.email).get();
+        userRole = doc.exists ? doc.data().role : 'staff';
+        document.getElementById('userInfo').innerText = `${user.email} (${userRole === 'owner' ? 'Chủ shop' : 'Nhân viên'})`;
+        initAdmin();
+      } else {
+        document.getElementById('loginModal').style.display = 'flex';
+      }
+    });
+
+    // === KHỞI TẠO ADMIN ===
+    function initAdmin() {
+      document.getElementById('loginModal').style.display = 'none';
+      loadProducts();
+      loadOrders();
+      loadReport();
+      applyPermissions();
+    }
+
+    // === PHÂN QUYỀN ===
+    function applyPermissions() {
+      if (userRole !== 'owner') {
+        // Nhân viên: chỉ xem đơn hàng + báo cáo
+        document.getElementById('tabProducts').style.display = 'none';
+        document.querySelectorAll('#saveBtn, .btn-edit, .btn-delete').forEach(el => el.disabled = true);
+        showTab('orders');
+      }
+    }
+
+    // === TAB ===
+    function showTab(tab) {
+      ['products', 'orders', 'report'].forEach(t => {
+        document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Content`).style.display = 'none';
+        document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).style.background = '';
+      });
+      document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Content`).style.display = 'block';
+      document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.background = 'var(--neon-purple)';
+    }
+
+    // === SẢN PHẨM ===
+    async function loadProducts() {
+      const snap = await db.collection('products').get();
+      window.products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const list = document.getElementById('adminList');
+      list.innerHTML = '';
+      window.products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'admin-product-card';
+        card.innerHTML = `
+          <img src="${p.img}" style="width:100%; height:180px; object-fit:cover;">
+          <div style="padding:1.5rem;">
+            <div style="font-weight:600; color:white;">${p.name}</div>
+            <div style="color:var(--neon-blue);">${p.price.toLocaleString()}₫</div>
+            <div class="admin-actions">
+              <button class="btn-edit" onclick="editProduct('${p.id}')">Sửa</button>
+              <button class="btn-delete" onclick="deleteProduct('${p.id}')">Xóa</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    window.editProduct = async (id) => { /* ... như trước ... */ };
+    window.deleteProduct = async (id) => { /* ... */ };
+    window.saveProduct = async () => { /* ... */ };
+
+    // === ĐƠN HÀNG ===
+    async function loadOrders() { /* ... như trước ... */ }
+    window.updateStatus = async (id, status) => { /* ... */ };
+    window.deleteOrder = async (id) => { /* ... */ };
+
+    // === BÁO CÁO DOANH THU ===
+    async function loadReport() {
+      const snap = await db.collection('orders').where('status', '==', 'completed').get();
+      const data = {};
+      let total = 0;
+
+      snap.docs.forEach(doc => {
+        const o = doc.data();
+        const date = new Date(o.timestamp?.toDate()).toLocaleDateString('vi-VN');
+        data[date] = (data[date] || 0) + o.total;
+        total += o.total;
+      });
+
+      const labels = Object.keys(data).sort();
+      const values = labels.map(d => data[d]);
+
+      document.getElementById('totalRevenue').innerText = total.toLocaleString() + '₫';
+
+      if (revenueChart) revenueChart.destroy();
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+      revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Doanh thu (VNĐ)',
+            data: values,
+            borderColor: '#00d4ff',
+            backgroundColor: 'rgba(0,212,255,0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: 'white' } } },
+          scales: {
+            y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          }
+        }
+      });
+    }
+
+    // === KHỞI TẠO ===
+    document.addEventListener('DOMContentLoaded', () => {
+      for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 15 + 's';
+        document.getElementById('particles').appendChild(p);
+      }
+    });
+  </script>
+</body>
+</html>

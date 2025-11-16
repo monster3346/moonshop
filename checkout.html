@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Thanh Toán - MOON SHOP</title>
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- CSS từ index.html (copy nguyên) -->
+  <style>
+    :root {
+      --bg: #0b0b1f;
+      --card: rgba(20, 20, 50, 0.6);
+      --neon-blue: #00d4ff;
+      --neon-purple: #9d4edd;
+      --text: #f0f0ff;
+      --text-muted: #b0b0d0;
+      --glass: rgba(255, 255, 255, 0.05);
+      --border: rgba(0, 212, 255, 0.15);
+      --danger: #ff4757;
+      --success: #2ed573;
+      --gold: #ffd700;
+      --sale: #ff4757;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(157, 78, 221, 0.1) 0%, transparent 50%);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+    .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute; width: 4px; height: 4px; background: var(--neon-blue); border-radius: 50%;
+      opacity: 0; animation: float 15s infinite linear; box-shadow: 0 0 12px var(--neon-blue);
+    }
+    @keyframes float { 0% { transform: translateY(100vh); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-100px) translateX(80px); opacity: 0; } }
+
+    /* Header */
+    header {
+      position: fixed; top: 0; width: 100%; z-index: 1000;
+      padding: 1.5rem 0; backdrop-filter: blur(20px);
+      background: linear-gradient(to bottom, rgba(11, 11, 31, 0.95), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-container {
+      max-width: 1400px; margin: 0 auto; padding: 0 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo {
+      font-family: 'Clash Display', sans-serif; font-size: 2.2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Main */
+    .checkout-container {
+      max-width: 1200px; margin: 120px auto 6rem; padding: 0 2rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;
+    }
+    .form-section, .order-section {
+      background: var(--card); padding: 2.5rem; border-radius: 24px;
+      border: 1px solid var(--border); backdrop-filter: blur(15px);
+    }
+    .form-section h3, .order-section h3 {
+      font-family: 'Clash Display', sans-serif; margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      font-size: 1.8rem;
+    }
+    .form-grid {
+      display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;
+    }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      background: var(--glass); border: 1px solid var(--border); color: white;
+      padding: 1rem; border-radius: 12px; font-size: 1rem;
+      transition: 0.3s;
+    }
+    .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+      border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0,212,255,0.3);
+    }
+    .form-grid .full { grid-column: span 2; }
+
+    /* Order Items */
+    .order-item {
+      display: flex; align-items: center; gap: 1rem; padding: 1rem 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .order-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; }
+    .order-item .info { flex: 1; }
+    .order-item .name { font-weight: 600; }
+    .order-item .price { color: var(--neon-blue); font-weight: 700; }
+
+    /* Summary */
+    .summary {
+      margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border);
+    }
+    .summary-row {
+      display: flex; justify-content: space-between; margin: 0.8rem 0;
+      font-size: 1.1rem;
+    }
+    .total-row {
+      font-size: 1.4rem; font-weight: 700; color: var(--neon-blue);
+      margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--neon-purple);
+    }
+
+    /* Payment Methods */
+    .payment-methods {
+      display: grid; gap: 1rem; margin: 2rem 0;
+    }
+    .payment-option {
+      display: flex; align-items: center; gap: 1rem; padding: 1rem;
+      background: var(--glass); border: 1px solid var(--border); border-radius: 16px;
+      cursor: pointer; transition: 0.3s;
+    }
+    .payment-option:hover { border-color: var(--neon-blue); }
+    .payment-option input[type="radio"] { accent-color: var(--neon-purple); }
+
+    /* Button */
+    .btn-checkout {
+      width: 100%; margin-top: 2rem; padding: 1.2rem;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      color: white; border: none; border-radius: 16px;
+      font-weight: 600; font-size: 1.2rem; cursor: pointer;
+      transition: 0.4s; box-shadow: 0 8px 25px rgba(0,212,255,0.3);
+    }
+    .btn-checkout:hover {
+      transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,212,255,0.4);
+    }
+
+    @media (max-width: 992px) {
+      .checkout-container { grid-template-columns: 1fr; }
+    }
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <div class="logo">MOON SHOP</div>
+      <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-weight:500;">
+        <i class="fas fa-arrow-left"></i> Quay lại mua sắm
+      </a>
+    </div>
+  </header>
+
+  <!-- Checkout -->
+  <div class="checkout-container">
+    <!-- Thông tin giao hàng -->
+    <div class="form-section">
+      <h3>Thông Tin Giao Hàng</h3>
+      <div class="form-grid">
+        <input type="text" id="fullName" placeholder="Họ và tên *" required>
+        <input type="email" id="email" placeholder="Email *" required>
+        <input type="tel" id="phone" placeholder="Số điện thoại *" required>
+        <input type="text" id="address" placeholder="Địa chỉ chi tiết *" class="full" required>
+        <select id="city" class="full" required>
+          <option value="">Chọn tỉnh/thành phố</option>
+          <option>TP. Hồ Chí Minh</option>
+          <option>Hà Nội</option>
+          <option>Đà Nẵng</option>
+          <option>Cần Thơ</option>
+          <option>Hải Phòng</option>
+        </select>
+        <textarea id="note" placeholder="Ghi chú (không bắt buộc)" rows="3" class="full"></textarea>
+      </div>
+    </div>
+
+    <!-- Đơn hàng & Thanh toán -->
+    <div class="order-section">
+      <h3>Đơn Hàng Của Bạn</h3>
+      <div id="orderItems"></div>
+
+      <div class="summary">
+        <div class="summary-row">
+          <span>Tạm tính:</span>
+          <span id="subtotal">0₫</span>
+        </div>
+        <div class="summary-row">
+          <span>Phí vận chuyển:</span>
+          <span id="shipping">30.000₫</span>
+        </div>
+        <div class="total-row">
+          <span>TỔNG CỘNG:</span>
+          <span id="total">0₫</span>
+        </div>
+      </div>
+
+      <h3 style="margin:2rem 0 1rem;">Phương Thức Thanh Toán</h3>
+      <div class="payment-methods">
+        <label class="payment-option">
+          <input type="radio" name="payment" value="cod" checked>
+          <i class="fas fa-truck" style="font-size:1.5rem; color:var(--neon-purple);"></i>
+          <span>Thanh toán khi nhận hàng (COD)</span>
+        </label>
+        <label class="payment-option">
+          <input type="radio" name="payment" value="momo">
+          <img src="https://momo.vn/assets/images/logo-momo.png" width="50" alt="Momo">
+          <span>Thanh toán qua Momo</span>
+        </label>
+      </div>
+
+      <button class="btn-checkout" onclick="placeOrder()">
+        HOÀN TẤT ĐƠN HÀNG
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // === FIREBASE CONFIG (THAY BẰNG CỦA BẠN) ===
+    const firebaseConfig = { /* DÁN TỪ FIREBASE */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let cart = JSON.parse(localStorage.getItem('moonCart')) || [];
+    let total = 0;
+
+    // Render đơn hàng
+    function renderOrder() {
+      const container = document.getElementById('orderItems');
+      container.innerHTML = '';
+      total = 0;
+
+      if (cart.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Giỏ hàng trống!</p>';
+        return;
+      }
+
+      cart.forEach(item => {
+        total += item.price * item.qty;
+        const div = document.createElement('div');
+        div.className = 'order-item';
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.name}">
+          <div class="info">
+            <div class="name">${item.name}</div>
+            <small style="color:var(--text-muted);">x${item.qty}</small>
+          </div>
+          <div class="price">${(item.price * item.qty).toLocaleString()}₫</div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('subtotal').innerText = total.toLocaleString() + '₫';
+      document.getElementById('total').innerText = (total + 30000).toLocaleString() + '₫';
+    }
+
+    // Đặt hàng
+    async function placeOrder() {
+      const name = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const city = document.getElementById('city').value;
+      const note = document.getElementById('note').value;
+      const payment = document.querySelector('input[name="payment"]:checked').value;
+
+      if (!name || !email || !phone || !address || !city) {
+        return alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      }
+
+      const order = {
+        customer: { name, email, phone, address: `${address}, ${city}`, note },
+        items: cart,
+        subtotal: total,
+        shipping: 30000,
+        total: total + 30000,
+        paymentMethod: payment,
+        status: payment === 'cod' ? 'pending' : 'paid',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+       const docRef = await db.collection('orders').add(order);
+       localStorage.removeItem('moonCart');
+       alert('Đặt hàng thành công!');
+       location.href = `tracking.html?id=${docRef.id}`;
+       // XÓA DÒNG DƯỚI ĐÂY
+       // setTimeout(() => location.href = 'index.html', 1500);
+    } catch (err) {
+      alert('Lỗi: ' + err.message);
+ }
+
+    // Particles
+    document.addEventListener('DOMContentLoaded', () => {
+      renderOrder();
+      if (cart.length === 0) {
+        alert('Giỏ hàng trống!');
+        location.href = 'index.html';
+      }
+
+      for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 15 + 's';
+        document.getElementById('particles').appendChild(p);
+      }
+    });
+  </script>
+</body>
+</html>
